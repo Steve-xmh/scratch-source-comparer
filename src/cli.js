@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const jszip = require("jszip");
-require("colors");
+const chalk = require('chalk')
 const crypto = require("crypto");
 const codeComparer = require("./codeComparer");
 const readline = require("readline");
@@ -11,7 +11,7 @@ const summary = require("./summary");
 let finalReports = [];
 
 console.log("");
-console.log("    Scratch Source Comparer v1.1.0".blue);
+console.log("    Scratch Source Comparer v1.1.0");
 console.log("");
 
 // 在本列表中加入的 MD5 将在对比时忽略
@@ -31,7 +31,7 @@ let file0 = undefined;
 let file1 = undefined;
 
 if (!f0 || !f1) {
-	console.log("用法：node scSourceComparer.js (原工程路径) (被比较工程路径)".yellow);
+	console.log("用法：node scSourceComparer.js (原工程路径) (被比较工程路径)");
 	return;
 }
 

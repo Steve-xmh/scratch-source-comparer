@@ -8,13 +8,27 @@
   },
   "scripts": {
     "start": "node src/cli",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/test"
   },
-  "keywords": [],
+  "keywords": [
+    "scratch",
+    "comparer"
+  ],
   "author": "",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "chalk": "^3.0.0",
     "colors": "^1.4.0",
-    "jszip": "^3.2.2"
+    "jszip": "^3.2.2",
+    "leven": "^3.1.0",
+    "md5": "^2.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1"
   }
 }
