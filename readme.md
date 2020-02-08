@@ -1,4 +1,4 @@
-# Scration Source Comparer
+# Scratch Source Comparer
 
 A program to compare the same between two scratch project.
 
