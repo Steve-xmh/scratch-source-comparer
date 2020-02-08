@@ -17,11 +17,14 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "beautify": "0.0.8",
     "chalk": "^3.0.0",
     "colors": "^1.4.0",
+    "js-beautify": "^1.10.3",
     "jszip": "^3.2.2",
     "leven": "^3.1.0",
-    "md5": "^2.2.1"
+    "md5": "^2.2.1",
+    "prettydiff": "^101.2.6"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
