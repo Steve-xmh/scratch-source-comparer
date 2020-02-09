@@ -102,6 +102,7 @@ function compareCode (project0, project1) {
                 if (block instanceof Object && !(block instanceof Array)) { // Array is an independent variable
                     if (block.opcode &&
                         block.opcode.startsWith('event_') &&
+                        block.opcode !== 'event_broadcastandwait' &&
                         block.opcode !== 'event_broadcast') { // Event hat block
                         array.push({
                             id,
