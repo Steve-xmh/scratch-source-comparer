@@ -1,10 +1,25 @@
-module.exports = (num) => {
-	if (num < 1) return "毫无抄袭".grey;
-	else if (num < 10) return "稍微抄袭".cyan;
-	else if (num < 20) return "轻度抄袭".green;
-	else if (num < 50) return "普通抄袭".yellow;
-	else if (num < 80) return "重度抄袭".red;
-	else if (num < 100) return "几乎照搬".red;
-	else if (num >= 100) return "完全一致".bgRed.white;
-	else return "出问题了".bgWhite.bgBlack;
+const chalk = require('chalk')
+
+const summaryList = [
+    [0.01, 'Completely different', chalk.gray],
+    [0.1, 'A little same', chalk.cyan],
+    [0.2, 'A few same', chalk.green],
+    [0.5, 'Something same', chalk.yellow],
+    [0.8, 'A lot of same', chalk.red],
+    [1, 'Very same', chalk.bgYellow.red],
+    [0, 'They are the same', chalk.bgRed.white],
+    [0, 'Something is wrong', chalk.bgWhite.black]
+]
+
+module.exports = (num, color = false) => {
+    for (let i = 0; i < 5; i++) {
+        if (num < summaryList[i][0]) {
+            return color ? summaryList[i][2](summaryList[i][1]) : summaryList[i][1]
+        }
+    }
+    if (num >= 1) {
+        return color ? summaryList[6][2](summaryList[6][1]) : summaryList[6][1]
+    } else {
+        return color ? summaryList[7][2](summaryList[7][1]) : summaryList[7][1]
+    }
 }
