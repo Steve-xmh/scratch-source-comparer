@@ -1,4 +1,8 @@
 'use strict'
+/**
+ * @fileoverview
+ * The old code comparer.
+ */
 // codeComparer - 比对代码！
 require('colors')
 const readline = require('readline')
@@ -66,8 +70,12 @@ function fixBlock (block, blocks) {
 }
 
 function compare (project0, project1, reports = []) {
-    const report = (str) => { reports.push(str) }
     return new Promise((resolve, reject) => {
+        function addSameTopBlock (tree, code) {
+            tree[code.sprite] = tree[code.sprite] || []
+            tree[code.sprite].push({ x: code.x, y: code.y })
+        }
+
         try {
             console.log('(0/3)正在扫描源代码……'.yellow)
             const scObj0 = project0.targets
@@ -108,14 +116,9 @@ function compare (project0, project1, reports = []) {
             const total0 = proj0Codes.length
             const total1 = proj1Codes.length
 
-            function addSameTopBlock (tree, code) {
-                tree[code.sprite] = tree[code.sprite] || []
-                tree[code.sprite].push({ x: code.x, y: code.y })
-            }
-
             for (let i = 0; i < proj0Codes.length; i++) {
                 for (let k = 0; k < proj1Codes.length; k++) {
-                    if (proj0Codes[i].b.toFormatedString() == proj1Codes[k].b.toFormatedString()) {
+                    if (proj0Codes[i].b.toFormatedString() === proj1Codes[k].b.toFormatedString()) {
                         same0++
                         readline.clearLine(process.stdout)
                         addSameTopBlock(sameTopBlockTree0, proj0Codes[i])
@@ -127,7 +130,7 @@ function compare (project0, project1, reports = []) {
 
             for (let i = 0; i < proj1Codes.length; i++) {
                 for (let k = 0; k < proj0Codes.length; k++) {
-                    if (proj1Codes[i].b.toFormatedString() == proj0Codes[k].b.toFormatedString()) {
+                    if (proj1Codes[i].b.toFormatedString() === proj0Codes[k].b.toFormatedString()) {
                         same1++
                         readline.clearLine(process.stdout)
                         addSameTopBlock(sameTopBlockTree1, proj1Codes[i])

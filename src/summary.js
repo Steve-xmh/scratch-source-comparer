@@ -12,7 +12,7 @@ const summaryList = [
 ]
 
 module.exports = (num, color = false) => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
         if (num < summaryList[i][0]) {
             return color ? summaryList[i][2](summaryList[i][1]) : summaryList[i][1]
         }
