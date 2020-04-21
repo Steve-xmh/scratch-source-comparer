@@ -2,7 +2,7 @@
   "name": "scratch-source-comparer",
   "version": "1.0.0",
   "description": "",
-  "main": "src/cli.js",
+  "main": "src/index.js",
   "bin": {
     "scsc": "src/cli.js"
   },
@@ -20,11 +20,15 @@
     "beautify": "0.0.8",
     "chalk": "^3.0.0",
     "colors": "^1.4.0",
+    "image-js": "^0.21.9",
     "js-beautify": "^1.10.3",
     "jszip": "^3.2.2",
     "leven": "^3.1.0",
     "md5": "^2.2.1",
-    "prettydiff": "^101.2.6"
+    "p-progress": "^0.4.2",
+    "prettydiff": "^101.2.6",
+    "progress-promise": "0.0.6",
+    "scratch-vm": "^0.2.0-prerelease.20200402182733"
   },
   "devDependencies": {
     "eslint": "^6.8.0",

@@ -35,27 +35,27 @@ async function main () {
         }
     }
 
-    const final = (result.assets.o1 / result.assets.o1l * 0.3) + (proj1samularty / result.code.code1length * 0.7)
+    const final = (result.assets.objectSameAmount0 / result.assets.objectAmount1 * 0.3) + (proj1samularty / result.code.code1length * 0.7)
     const summary = getSummary(final, true)
 
     clog`{green.bold Result}:`
     clog`Project 1:                                     {yellow ${file0}}`
     clog`Project 2:                                     {yellow ${file1}}`
     clog`{green Assets result}:`
-    clog`Project 1's assets amount:                     {yellow ${result.assets.o0l}}`
-    clog`Project 2's assets amount:                     {yellow ${result.assets.o1l}}`
-    clog`Project 1's same assets amount:                {yellow ${result.assets.o0}}`
-    clog`Project 2's same assets amount:                {yellow ${result.assets.o1}}`
-    clog`Project 1 same assets proportion:              {yellow ${result.assets.o0 / result.assets.o0l * 100}%}`
-    clog`Project 2 same assets proportion:              {yellow ${result.assets.o1 / result.assets.o1l * 100}%}`
+    clog`Project 1's assets amount:                     {yellow ${result.assets.objectSameAmount0}}`
+    clog`Project 2's assets amount:                     {yellow ${result.assets.objectSameAmount1}}`
+    clog`Project 1's same assets amount:                {yellow ${result.assets.objectAmount0}}`
+    clog`Project 2's same assets amount:                {yellow ${result.assets.objectAmount1}}`
+    clog`Project 1 same assets proportion:              {yellow ${result.assets.objectSameAmount0 / result.assets.objectAmount0 * 100}%}`
+    clog`Project 2 same assets proportion:              {yellow ${result.assets.objectSameAmount1 / result.assets.objectAmount1 * 100}%}`
     clog`Same list:`
-    for (const key in result.assets.o0sk) {
-        clog`  - {yellow ${result.assets.o0sk[key]}}`
+    for (const key in result.assets.objectSameKey0) {
+        clog`  - {yellow ${result.assets.objectSameKey0[key]}}`
     }
-    clog`Project 2's assets amount same to Project 1's: {yellow ${result.assets.o1}}`
+    clog`Project 2's assets amount same to Project 1's: {yellow ${result.assets.objectSameAmount1}}`
     clog`Same list:`
-    for (const key in result.assets.o1sk) {
-        clog`  - {yellow ${result.assets.o0sk[key]}}`
+    for (const key in result.assets.objectSameKey1) {
+        clog`  - {yellow ${result.assets.objectSameKey0[key]}}`
     }
     clog`{green Code result}:`
     clog`Project 1's program trees amount:              {yellow ${result.code.code0length}}`

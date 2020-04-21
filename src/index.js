@@ -1,8 +1,16 @@
 'use strict'
 // const summary = require('./summary')
 const prettydiff = require('prettydiff')
-const md5 = require('md5')
+const VisualMachine = require('scratch-vm/src/index')
+const minilog = require('minilog')
+// TODO: Use imagejs to compare images
+const imagejs = require('image-js')
+const isNode = !(typeof window !== 'undefined' && window !== null)
+const md5 = data => isNode ? require('crypto').createHash('md5').update(data).digest('hex') : require('md5')(data)
 const jszip = require('jszip')
+// Prevent blocking
+/** @returns {Promise<void>} */
+const waitTick = () => new Promise(resolve => setTimeout(resolve, 0))
 
 // The md5 inside this list will be ignored in compare.
 const ignoreMD5List = [
@@ -93,11 +101,14 @@ function fixBlock (block, blocks) {
     return b
 }
 
-function compareCode (project0, project1) {
-    function makeCodeTree (project) {
+async function compareCode (project0, project1, progress = () => {}) {
+    let total = 0
+    let cur = 0
+    async function makeCodeTree (project) {
         const array = []
         for (const target of project.targets) {
             for (const id in target.blocks) {
+                await waitTick()
                 const block = target.blocks[id]
                 if (block instanceof Object && !(block instanceof Array)) { // Array is an independent variable
                     if (block.opcode &&
@@ -108,6 +119,8 @@ function compareCode (project0, project1) {
                             id,
                             code: fixBlock(block, target.blocks).toFormatedString()
                         })
+                        total++
+                        progress({ text: `正在构建伪代码 (${total})`, progress: 50 + total * 0.02 })
                     } else if (block.opcode) {
                         switch (block.opcode) { // Some special hat blocks.
                         case 'procedures_definition':
@@ -116,6 +129,8 @@ function compareCode (project0, project1) {
                                 id,
                                 code: fixBlock(block, target.blocks).toFormatedString()
                             })
+                            total++
+                            progress({ text: `正在构建伪代码 (${total})`, progress: 50 + total * 0.02 })
                             break
                         default:
                         }
@@ -125,13 +140,14 @@ function compareCode (project0, project1) {
         }
         return array
     }
-    function compareTree (codeTrees0, codeTrees1) {
+    async function compareTree (codeTrees0, codeTrees1) {
         const result = { same: {}, length: 0 }
         const sameObj = result.same
         for (const tree0 of codeTrees0) {
             prettydiff.options.source = tree0.code
             let samest = null
             for (const tree1 of codeTrees1) {
+                await waitTick()
                 let equalsLines = 0
                 let changedLine = 0
                 if (tree0.code === tree1.code) {
@@ -145,29 +161,34 @@ function compareCode (project0, project1) {
                     result.length++
                     break
                 } else { // Use prettydiff
-                    prettydiff.options.diff = tree1.code
-                    const prettyResult = JSON.parse(prettydiff())
-                    prettyResult.diff.forEach(v => {
-                        switch (v[0]) {
-                        case '=':
-                            equalsLines++
-                        // eslint-disable-next-line no-fallthrough
-                        case '+':
-                        case 'r':
-                            changedLine++
-                            break
-                        case '-':
-                            changedLine--
-                            break
+                    try {
+                        prettydiff.options.diff = tree1.code
+                        const prettyResult = JSON.parse(prettydiff())
+                        prettyResult.diff.forEach(v => {
+                            switch (v[0]) {
+                            case '=':
+                                equalsLines++
+                            // eslint-disable-next-line no-fallthrough
+                            case '+':
+                            case 'r':
+                                changedLine++
+                                break
+                            case '-':
+                                changedLine--
+                                break
+                            }
+                        })
+                        if ((!samest || equalsLines / changedLine > samest.simularty) && equalsLines < changedLine) {
+                            samest = {
+                                simularTo: tree1.id,
+                                simularty: equalsLines / changedLine,
+                                code0: tree0.code,
+                                code1: tree1.code
+                            }
                         }
-                    })
-                    if ((!samest || equalsLines / changedLine > samest.simularty) && equalsLines < changedLine) {
-                        samest = {
-                            simularTo: tree1.id,
-                            simularty: equalsLines / changedLine,
-                            code0: tree0.code,
-                            code1: tree1.code
-                        }
+                    } catch (err) {
+                        // console.warn(err)
+                        samest = null
                     }
                     // console.log(prettyResult)
                 }
@@ -181,17 +202,19 @@ function compareCode (project0, project1) {
                 }
                 result.length++
             }
+            cur++
+            progress({ text: `正在比对代码 (${cur}/${total})`, progress: 60 + ((cur / total) * 35) })
         }
         return result
     }
     const result = {}
-    const codeTrees0 = makeCodeTree(project0)
-    const codeTrees1 = makeCodeTree(project1)
+    const codeTrees0 = await makeCodeTree(project0)
+    const codeTrees1 = await makeCodeTree(project1)
     prettydiff.options.diff_format = 'json'
     result.code0length = codeTrees0.length
     result.code1length = codeTrees1.length
-    result.code0 = compareTree(codeTrees0, codeTrees1)
-    result.code1 = compareTree(codeTrees1, codeTrees0)
+    result.code0 = await compareTree(codeTrees0, codeTrees1)
+    result.code1 = await compareTree(codeTrees1, codeTrees0)
     // console.log(codeTrees0[0])
     return result
 }
@@ -200,44 +223,48 @@ function compareCode (project0, project1) {
  * Compare the same between two objects
  * @param {Object} o0 First object
  * @param {Array<any>} o1 Second object
- * @returns {{o0:number,o1:number,o0l:number,o1l:number}} The result
+ * @param {Hash} h0 Second object
+ * @param {Object<string,Hash>} h1 Second object
+ * @returns {Promise<{o0:number,o1:number,o0l:number,o1l:number}>} The result
 */
-function compareObject (o0, o1) {
+async function compareAssets ({ o0, o1, h0, h1, progress = () => {} }) {
     const result = {
-        o0: 0,
-        o1: 0,
-        o0l: 0,
-        o1l: 0,
-        o0s: [],
-        o1s: [],
-        o0sk: {},
-        o1sk: {}
+        objectSameAmount0: 0,
+        objectSameAmount1: 0,
+        objectAmount0: 0,
+        objectAmount1: 0,
+        objectSame0: [],
+        objectSame1: [],
+        objectSameKey0: {},
+        objectSameKey1: {}
     }
+
     for (const okey in o0) {
         const item = o0[okey]
-        result.o0l++
+        result.objectAmount0++
         if (ignoreMD5List.indexOf(item) !== -1) continue
         for (const key in o1) {
+            await waitTick()
             const comp = o1[key]
-            // console.log(comp, item)
             if (comp === item) {
-                result.o0s.push(item)
-                result.o0sk[item] = okey
-                result.o0++
+                result.objectSame0.push(item)
+                result.objectSameKey0[item] = okey
+                result.objectSameAmount0++
                 break
             }
         }
     }
     for (const okey in o1) {
         const item = o1[okey]
-        result.o1l++
+        result.objectAmount1++
         if (ignoreMD5List.indexOf(item) !== -1) continue
         for (const key in o0) {
+            await waitTick()
             const comp = o0[key]
             if (comp === item) {
-                result.o1s.push(item)
-                result.o1sk[item] = okey
-                result.o1++
+                result.objectSame1.push(item)
+                result.objectSameKey1[item] = okey
+                result.objectSameAmount1++
                 break
             }
         }
@@ -245,18 +272,38 @@ function compareObject (o0, o1) {
     return result
 }
 
+async function transferSb2IfNeed (proj) {
+    const projJSON = JSON.parse(await proj.file('project.json').async('string'))
+    if (projJSON.objName !== undefined) {
+        const vm = new VisualMachine()
+        await vm.loadProject(projJSON)
+        proj.file('project.json', vm.toJSON())
+        return jszip.loadAsync(vm.saveProjectSb3())
+    }
+}
+
 /**
  * Compare two project, return a result object.
  * @param {Buffer|ArrayBuffer|String|Blob|ReadableStream} project0 The project to compare.
  * @param {Buffer|ArrayBuffer|String|Blob|ReadableStream} project1 The project to be compared.
+ * @param {Function} progress A function which will be invoked while comparing, taking a progress message as an argument.
  * @returns {Promise<Object>} The result.
  */
-async function compare (project0, project1) {
+async function compare (project0, project1, progress = () => {}) {
+    progress({ text: '正在转换工程版本', progress: 0 })
+    minilog.disable()
     const [zip0, zip1] = await Promise.all([jszip.loadAsync(project0), jszip.loadAsync(project1)])
+    transferSb2IfNeed(zip0)
+    transferSb2IfNeed(zip1)
+    progress({ text: '正在打开', progress: 0 })
     const md50 = {}
     const md51 = {}
+    const imgHash0 = {}
+    const imgHash1 = {}
     const threads = []
     const result = {}
+    let fileTotal = 0
+    let fileLoaded = 0
     /**
      * Collect file hash from zip.
      * @param {jszip} zip The JSZip Object contains file.
@@ -265,23 +312,38 @@ async function compare (project0, project1) {
     function collectHash (zip, array) {
         zip.forEach((rpath, file) => {
             if (rpath === 'project.json') return
+            fileTotal++
             threads.push((async () => {
                 const data = await file.async('uint8array')
-                array[rpath] = md5(data)
+                const hash = md5(data)
+                if (ignoreMD5List.indexOf(hash) === -1) {
+                    if (rpath.endsWith('.png')) {
+                        array[rpath] = md5(data)
+                    } else {
+                        array[rpath] = md5(data)
+                    }
+                    await waitTick()
+                }
+                fileLoaded++
+                progress({ text: `收集资源文件中 (${fileLoaded}/${fileTotal})`, progress: 5 + ((fileLoaded / fileTotal) * 30) })
+                // }
             })())
         })
     }
 
-    collectHash(zip0, md50)
-    collectHash(zip1, md51)
+    collectHash(zip0, md50, imgHash0)
+    collectHash(zip1, md51, imgHash1)
     await Promise.all(threads)
     // console.log(md50, md51)
-    result.assets = compareObject(md50, md51)
+    progress({ text: '对比资源文件中', progress: 35 })
+    result.assets = await compareAssets({ o0: md50, o1: md51, h0: imgHash0, h1: imgHash1, progress })
+    progress({ text: '分析代码中', progress: 50 })
     const [projectJson0, projectJson1] = await Promise.all([
         (async () => JSON.parse(await zip0.file('project.json').async('string')))(),
         (async () => JSON.parse(await zip1.file('project.json').async('string')))()
     ])
-    result.code = compareCode(projectJson0, projectJson1)
+    result.code = await compareCode(projectJson0, projectJson1, progress)
+    progress({ text: '完成！', progress: 1 })
     return result
 }
 
