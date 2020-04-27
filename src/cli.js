@@ -1,23 +1,32 @@
 'use strict'
-const { promises: fs } = require('fs')
+const { promises: fs, existsSync } = require('fs')
 const compare = require('./index')
 const getSummary = require('./summary')
 const chalk = require('chalk')
+const { resolve } = require('path')
 
 const clog = (...args) => console.log(chalk(...args))
 const err = (...args) => console.log(chalk.red('[Error]'), ...args)
 
 async function main () {
     clog`{blue.bold S}{blue cratch}{blue.bold S}{blue ource}{blue.bold C}{blue omparer}\n{yellow by SteveXMH}`
-    if (process.argv.length <= 2) {
+    if (process.argv.length <= 2 || process.argv.includes('--help')) {
         clog`Usage: {yellow npm start (FilePath1) (FilePath2)}`
         clog`   Or: {yellow scsc (FilePath1) (FilePath2)} (If you used \`npm i scratch-source-comparer -g\` to install this)`
         return
     }
-    const [file0, file1] = [process.argv[process.argv.length - 2], process.argv[process.argv.length - 1]]
-    if (!(await fs.stat(file0)).isFile() || !(await fs.stat(file1)).isFile()) {
-        err('At least one file is not existed.')
-        return
+    const [file0, file1] = [resolve(__dirname, process.argv[process.argv.length - 2]), resolve(__dirname, process.argv[process.argv.length - 1])]
+    try {
+        if (!existsSync(file0) || !(await existsSync(file0)).isFile()) {
+            err('File1 is not existed: ', file0)
+            return
+        }
+        if (!existsSync(file1) || !(await fs.stat(file1)).isFile()) {
+            err('File2 is not existed.', file1)
+            return
+        }
+    } catch (err) {
+
     }
     const [read0, read1] = await Promise.all([fs.readFile(file0), fs.readFile(file1)])
     clog`Comparing {yellow ${file0}}\n      and {yellow ${file1}}`
